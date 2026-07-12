@@ -6,3 +6,5 @@ screenshots/
 site-map.json
 generated-tests.json
 generation-failures.json
+test-results.json
+playwright-scripts.json
