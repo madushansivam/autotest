@@ -13,8 +13,20 @@ function isBlocked(text) {
 }
 
 async function scanPage(page) {
+  // Everything inside this $$eval callback runs INSIDE the browser,
+  // so it can only use browser APIs (no Node fs, no imports) —
+  // that's why labelFor is defined inline here, not imported.
   const rawButtons = await page.$$eval('button, [role="button"]', (els) =>
-    els.map((el) => el.textContent.trim())
+    els.map((el) => {
+      const text = el.textContent?.trim();
+      if (text) return text;
+      const aria = el.getAttribute('aria-label');
+      if (aria) return `[aria-label] ${aria}`;
+      const title = el.getAttribute('title');
+      if (title) return `[title] ${title}`;
+      if (el.className) return `[class] ${el.className}`;
+      return '[unlabeled]';
+    })
   );
 
   const inputs = await page.$$eval('input', (els) =>
@@ -37,18 +49,12 @@ const browser = await chromium.launch({ headless: true });
 const page = await browser.newPage();
 await page.goto(TARGET_URL);
 
-console.log('--- SCAN 1: before interaction ---');
-const before = await scanPage(page);
-console.log(JSON.stringify(before, null, 2));
-
-// Interact: type a todo and press Enter to reveal conditional elements
 const newTodoInput = page.locator('input[placeholder="What needs to be done?"]');
 await newTodoInput.fill('Buy groceries');
 await newTodoInput.press('Enter');
-await page.waitForTimeout(500); // let the UI settle
+await page.waitForTimeout(500);
 
-console.log('--- SCAN 2: after adding one todo ---');
-const after = await scanPage(page);
-console.log(JSON.stringify(after, null, 2));
+const result = await scanPage(page);
+console.log(JSON.stringify(result, null, 2));
 
 await browser.close();
