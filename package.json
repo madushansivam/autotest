@@ -1,7 +1,8 @@
 {
   "name": "autotest",
   "version": "1.0.0",
-  "description": "Autonomous web application testing agent with safe-mode guardrails",  "main": "index.js",
+  "description": "Autonomous web application testing agent with safe-mode guardrails",  
+  "main": "index.js",
   "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
