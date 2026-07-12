@@ -19,6 +19,8 @@
   },
   "homepage": "https://github.com/madushansivam/autotest#readme",
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.111.0",
+    "@huggingface/inference": "^4.13.23",
     "dotenv": "^17.4.2",
     "playwright": "^1.61.1"
   }
