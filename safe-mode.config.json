@@ -1,0 +1,44 @@
+{
+  "mode": "dry-run",
+  "description": "Safe-mode guardrails for AutoTest crawler. Any interactive element matching these rules is SKIPPED, never clicked, never submitted.",
+  "blockedButtonText": [
+    "delete account",
+    "delete my account",
+    "close account",
+    "deactivate account",
+    "cancel subscription",
+    "unsubscribe",
+    "pay now",
+    "confirm payment",
+    "place order",
+    "checkout",
+    "buy now",
+    "submit payment",
+    "delete permanently",
+    "remove permanently"
+  ],
+  "blockedFieldTypes": [
+    "credit-card-number",
+    "card-number",
+    "cvv",
+    "cvc",
+    "card-expiry"
+  ],
+  "blockedFormActions": [
+    "password-reset",
+    "forgot-password",
+    "reset-password",
+    "contact",
+    "send-email",
+    "newsletter-signup"
+  ],
+  "blockedInputNamesOrIds": [
+    "cardNumber",
+    "cvv",
+    "cvc",
+    "ccExp",
+    "email_send",
+    "reset_token"
+  ],
+  "notes": "This is a blocklist, not a whitelist, because v1 targets known-shape CRUD apps where an explicit blocklist is tractable. Revisit if scope expands to unknown/adversarial sites."
+}
