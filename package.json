@@ -1,7 +1,7 @@
 {
   "name": "autotest",
   "version": "1.0.0",
-  "description": "Autonomous web application testing agent with safe-mode guardrails",  
+  "description": "Autonomous web application testing agent with safe-mode guardrails",
   "main": "index.js",
   "type": "module",
   "scripts": {
@@ -17,6 +17,8 @@
   "bugs": {
     "url": "https://github.com/madushansivam/autotest/issues"
   },
-  "homepage": "https://github.com/madushansivam/autotest#readme"
-  
+  "homepage": "https://github.com/madushansivam/autotest#readme",
+  "dependencies": {
+    "playwright": "^1.61.1"
+  }
 }
