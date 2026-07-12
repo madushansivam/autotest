@@ -4,3 +4,5 @@ node_modules/
 test-results/
 screenshots/
 site-map.json
+generated-tests.json
+generation-failures.json

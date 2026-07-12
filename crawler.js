@@ -13,17 +13,12 @@ function isBlocked(text) {
 }
 
 async function scanPage(page) {
-  // Everything inside this $$eval callback runs INSIDE the browser,
-  // so it can only use browser APIs (no Node fs, no imports) —
-  // that's why labelFor is defined inline here, not imported.
   const rawButtons = await page.$$eval('button, [role="button"]', (els) =>
     els.map((el) => {
       const text = el.textContent?.trim();
       if (text) return text;
       const aria = el.getAttribute('aria-label');
       if (aria) return `[aria-label] ${aria}`;
-      const title = el.getAttribute('title');
-      if (title) return `[title] ${title}`;
       if (el.className) return `[class] ${el.className}`;
       return '[unlabeled]';
     })
@@ -37,10 +32,7 @@ async function scanPage(page) {
     els.map((el) => ({ text: el.textContent.trim(), href: el.href }))
   );
 
-  const buttons = rawButtons.map((text) => ({
-    text,
-    safe: !isBlocked(text),
-  }));
+  const buttons = rawButtons.map((text) => ({ text, safe: !isBlocked(text) }));
 
   return { buttons, inputs, links };
 }
@@ -54,7 +46,14 @@ await newTodoInput.fill('Buy groceries');
 await newTodoInput.press('Enter');
 await page.waitForTimeout(500);
 
-const result = await scanPage(page);
-console.log(JSON.stringify(result, null, 2));
+const scan = await scanPage(page);
+
+// Standardized output: always an array of page objects, even for a
+// single page, so any downstream script (generate-tests.js etc.)
+// can treat crawler.js and multi-crawler.js output identically.
+const siteMap = [{ url: TARGET_URL, ...scan }];
+
+fs.writeFileSync('todomvc-site-map.json', JSON.stringify(siteMap, null, 2));
+console.log('Done. Output written to todomvc-site-map.json');
 
 await browser.close();
