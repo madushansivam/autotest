@@ -1,11 +1,38 @@
+# Dependencies
 node_modules/
+
+# Build output
+dist/
+build/
+
+# Environment – NEVER commit secrets
 .env
-*.log
+.env.local
+.env.production
+
+# SQLite legacy
+*.db
+
+# Playwright artifacts
 test-results/
-screenshots/
-site-map.json
-generated-tests.json
-generation-failures.json
-test-results.json
-playwright-scripts.json
-autotest.db
+playwright-report/
+
+# Generated eval reports (committed as part of submission but not auto-generated noise)
+eval/reports/*.json
+eval/reports/*.md
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+*.swp
+
+# TypeScript
+*.tsbuildinfo
+
+# Logs
+*.log
+npm-debug.log*

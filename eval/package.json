@@ -1,0 +1,13 @@
+{
+  "name": "autotest-eval",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "eval": "ts-node --project tsconfig.json run-eval.ts"
+  },
+  "devDependencies": {
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.3",
+    "@types/node": "^22.15.29"
+  }
+}

@@ -1,29 +1,12 @@
 {
   "name": "autotest",
   "version": "1.0.0",
-  "description": "Autonomous web application testing agent with safe-mode guardrails",
-  "main": "index.js",
-  "type": "module",
+  "private": true,
+  "workspaces": ["backend", "frontend", "eval"],
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/madushansivam/autotest.git"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/madushansivam/autotest/issues"
-  },
-  "homepage": "https://github.com/madushansivam/autotest#readme",
-  "dependencies": {
-    "@anthropic-ai/sdk": "^0.111.0",
-    "@huggingface/inference": "^4.13.23",
-    "better-sqlite3": "^12.11.1",
-    "dotenv": "^17.4.2",
-    "express": "^5.2.1",
-    "playwright": "^1.61.1"
+    "dev:backend": "npm run dev --workspace=backend",
+    "dev:frontend": "npm run dev --workspace=frontend",
+    "test": "npm run test --workspace=backend",
+    "eval:run": "npm run eval --workspace=eval"
   }
 }

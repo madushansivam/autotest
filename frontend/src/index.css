@@ -1,0 +1,59 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: dark;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-surface text-slate-100 font-sans antialiased;
+    min-height: 100vh;
+  }
+
+  /* Scrollbar styling */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    @apply bg-surface-1;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-surface-3 rounded-full;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-brand;
+  }
+}
+
+@layer components {
+  /* Glassmorphism card base */
+  .glass {
+    @apply bg-surface-1/80 backdrop-blur-md border border-white/5 rounded-2xl;
+  }
+
+  /* Focus ring consistent with brand */
+  .focus-ring {
+    @apply focus:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:ring-offset-surface;
+  }
+
+  /* Gradient brand text */
+  .gradient-text {
+    @apply bg-gradient-to-r from-brand-light to-brand bg-clip-text text-transparent;
+  }
+
+  /* Subtle section divider */
+  .divider {
+    @apply border-t border-white/5;
+  }
+}

@@ -1,0 +1,32 @@
+[
+  {
+    "description": "Click on the 'Delete' button and verify it exists without crashing the page.",
+    "confidence": "structural",
+    "validationWarning": null,
+    "script": "await page.locator('[aria-label] Delete').click();\nconst deleteButtonLocator = page.locator('[aria-label] Delete');\nawait expect(deleteButtonLocator).toBeVisible();\nreturn { passed: true };",
+    "generationFailed": false,
+    "executionResult": "crash",
+    "failureCategory": "runtime_error",
+    "error": "locator.click: Timeout 5000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[aria-label] Delete')\u001b[22m\n"
+  },
+  {
+    "description": "Enter some text in the text input field and verify the placeholder text changes.",
+    "confidence": "behavioral",
+    "validationWarning": null,
+    "script": "await page.fill('#todo-input', 'Test text');\nawait page.click('#add-btn');\nawait page.locator('#todo-input').waitFor();\nawait page.locator('#todo-input').locator('[placeholder]').update('Test text');\nconst error = await page.locator('#todo-input').locator('[placeholder]').getAttribute('placeholder');\nreturn { passed: error === 'Test text' };",
+    "generationFailed": false,
+    "executionResult": "crash",
+    "failureCategory": "runtime_error",
+    "error": "page.fill: Timeout 5000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('#todo-input')\u001b[22m\n"
+  },
+  {
+    "description": "Click on the 'All' link and verify the page loads without errors.",
+    "confidence": "structural",
+    "validationWarning": null,
+    "script": "try {\n  const allLink = page.locator('text=All');\n  await allLink.click();\n  await page.waitForLoadState('networkidle');\n  const error = await page.evaluate(() => {\n    const errors = [];\n    for (const error of window.performance.getEntriesByName('domInteractive')) {\n      if (error.name === 'TypeError' || error.name === 'SyntaxError') {\n        errors.push(error.message);\n      }\n    }\n    return errors;\n  });\n  if (error.length === 0) {\n    return { passed: true };\n  } else {\n    return { passed: false, error: error.join('\\n') };\n  }\n} catch (err) {\n  return { passed: false, error: err.message };\n}",
+    "generationFailed": false,
+    "executionResult": "fail",
+    "failureCategory": "assertion_failed",
+    "error": "locator.click: Timeout 5000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('text=All')\u001b[22m\n"
+  }
+]

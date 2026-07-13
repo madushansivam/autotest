@@ -1,0 +1,17 @@
+[
+  {
+    "description": "Click on the 'Delete' button and verify it exists without crashing the page.",
+    "confidence": "structural",
+    "validationWarning": null
+  },
+  {
+    "description": "Enter some text in the text input field and verify the placeholder text changes.",
+    "confidence": "behavioral",
+    "validationWarning": null
+  },
+  {
+    "description": "Click on the 'All' link and verify the page loads without errors.",
+    "confidence": "structural",
+    "validationWarning": null
+  }
+]
