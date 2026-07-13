@@ -1,132 +1,726 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>AutoTest Dashboard</title>
-  <style>
-    body { font-family: sans-serif; max-width: 900px; margin: 40px auto; padding: 0 20px; }
-    h1 { color: #1a1a2e; }
-    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-    th, td { text-align: left; padding: 10px; border-bottom: 1px solid #ddd; }
-    th { background: #f4f4f8; }
-    .pass { color: green; font-weight: bold; }
-    .fail { color: #c0392b; font-weight: bold; }
-    .crash { color: #8e44ad; font-weight: bold; }
-    button { padding: 6px 12px; cursor: pointer; }
-    #detail { margin-top: 30px; padding: 15px; background: #f9f9f9; border-radius: 6px; white-space: pre-wrap; font-family: monospace; font-size: 13px; }
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AutoTest — Diagnostic Dashboard</title>
+<style>
+  :root {
+    --bg: #0a0a0b;
+    --bg-raised: #131315;
+    --bg-card: #17171a;
+    --silver: #e4e4e7;
+    --silver-dim: #8a8a91;
+    --silver-faint: #55555c;
+    --line: #232326;
 
-    #runForm { display: flex; gap: 8px; margin-top: 16px; align-items: center; }
-    #runForm input[type="url"] { flex: 1; padding: 8px 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; }
-    #runForm button { background: #1a1a2e; color: white; border: none; border-radius: 4px; padding: 8px 16px; font-size: 14px; }
-    #runForm button:disabled { background: #999; cursor: not-allowed; }
-    #runStatus { margin-top: 10px; font-size: 14px; min-height: 20px; }
-    #runStatus.running { color: #555; }
-    #runStatus.error { color: #c0392b; font-weight: bold; }
-    #runStatus.success { color: green; font-weight: bold; }
-    .spinner {
-      display: inline-block; width: 12px; height: 12px; border: 2px solid #ccc;
-      border-top-color: #1a1a2e; border-radius: 50%; animation: spin 0.8s linear infinite;
-      margin-right: 6px; vertical-align: middle;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-  </style>
+    --pass: #4ade80;
+    --pass-dim: #4ade8022;
+    --fail: #fbbf24;
+    --fail-dim: #fbbf2422;
+    --crash: #f87171;
+    --crash-dim: #f8717122;
+    --skip: #8a8a91;
+    --skip-dim: #8a8a9122;
+
+    --mono: 'SF Mono', 'JetBrains Mono', 'Fira Code', ui-monospace, Menlo, Consolas, monospace;
+    --display: 'Space Grotesk', 'Inter', system-ui, sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+
+  html {
+    /* Base scale: every font-size below is in rem, so this one line controls
+       the whole page's text size and keeps it proportional across devices. */
+    font-size: clamp(16px, 0.95vw + 10px, 19px);
+  }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+    color: var(--silver);
+    font-family: var(--display);
+    min-height: 100vh;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: 999;
+    pointer-events: none;
+    opacity: 0.035;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  .shell {
+    /* Fluid width: never narrower than 980px worth of content on large screens,
+       never wider than ~78% of a huge display, and fills small screens edge-to-edge
+       via the padding below. Scales smoothly instead of snapping at breakpoints. */
+    width: min(1600px, 92vw);
+    margin: 0 auto;
+    padding: 48px clamp(20px, 4vw, 56px) 80px;
+  }
+
+  /* ---------- Header ---------- */
+  .masthead {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 20px;
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 16px;
+  }
+
+  .masthead h1 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin: 0;
+  }
+
+  .masthead .tag {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    color: var(--silver-faint);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  /* ---------- Run form ---------- */
+  .run-panel {
+    display: flex;
+    gap: 10px;
+  }
+
+  .run-panel input {
+    flex: 1;
+    background: var(--bg-raised);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 12px 14px;
+    color: var(--silver);
+    font-family: var(--mono);
+    font-size: 0.85rem;
+    outline: none;
+    transition: border-color 0.15s ease;
+  }
+  .run-panel input:focus { border-color: var(--silver-faint); }
+  .run-panel input::placeholder { color: var(--silver-faint); }
+
+  .run-panel button {
+    background: var(--silver);
+    color: var(--bg);
+    border: none;
+    border-radius: 6px;
+    padding: 0 22px;
+    font-family: var(--display);
+    font-weight: 600;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: opacity 0.15s ease, transform 0.1s ease;
+  }
+  .run-panel button:hover:not(:disabled) { opacity: 0.85; }
+  .run-panel button:active:not(:disabled) { transform: scale(0.98); }
+  .run-panel button:disabled { background: var(--bg-raised); color: var(--silver-faint); cursor: not-allowed; }
+
+  #runStatus {
+    margin-top: 10px;
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    min-height: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  #runStatus:empty { margin-top: 0; }
+  #runStatus.running { color: var(--silver-dim); }
+  #runStatus.error { color: var(--crash); }
+  #runStatus.success { color: var(--pass); }
+
+  .dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: currentColor;
+    animation: pulse 1.2s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.25; }
+  }
+
+  /* ---------- Crawl list ---------- */
+  .crawls {
+    margin-top: 24px;
+  }
+
+  .section-label-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 12px;
+  }
+
+  .section-label {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--silver-faint);
+  }
+
+  .stat-strip {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    color: var(--silver-faint);
+    display: flex;
+    gap: 12px;
+  }
+  .stat-strip .n-pass { color: var(--pass); }
+  .stat-strip .n-fail { color: var(--fail); }
+  .stat-strip .n-crash { color: var(--crash); }
+
+  /* URL group: one header per distinct URL, runs nested underneath */
+  .url-group {
+    margin-bottom: 10px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    overflow: hidden;
+    background: var(--bg-card);
+  }
+
+  .url-group-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    padding: 12px 16px;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.15s ease;
+  }
+  .url-group-header:hover { background: var(--bg-raised); }
+
+  .url-group-header .url {
+    font-size: 0.92rem;
+    font-weight: 500;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .url-group-header .run-count {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    color: var(--silver-faint);
+    flex-shrink: 0;
+  }
+
+  .url-group-header .chevron {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    color: var(--silver-faint);
+    transition: transform 0.15s ease;
+    flex-shrink: 0;
+  }
+  .url-group.expanded .chevron { transform: rotate(90deg); }
+
+  .url-group-runs {
+    display: none;
+    border-top: 1px solid var(--line);
+  }
+  .url-group.expanded .url-group-runs { display: block; }
+
+  .crawl-row {
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    align-items: center;
+    gap: 14px;
+    padding: 9px 16px;
+    border-top: 1px solid var(--line);
+    cursor: pointer;
+    transition: background 0.15s ease;
+  }
+  .url-group-runs .crawl-row:first-child { border-top: none; }
+  .crawl-row:hover { background: var(--bg-raised); }
+  .crawl-row.active { background: var(--bg-raised); box-shadow: inset 2px 0 0 var(--silver); }
+
+  .crawl-row .meta {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    color: var(--silver-faint);
+  }
+
+  .tally {
+    display: flex;
+    gap: 9px;
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    white-space: nowrap;
+  }
+  .tally span { display: flex; align-items: center; gap: 3px; }
+  .tally .n-pass { color: var(--pass); }
+  .tally .n-fail { color: var(--fail); }
+  .tally .n-crash { color: var(--crash); }
+  .tally .zero { opacity: 0.35; }
+
+  .row-actions button {
+    background: transparent;
+    border: 1px solid var(--line);
+    color: var(--silver-dim);
+    border-radius: 5px;
+    padding: 4px 9px;
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    cursor: pointer;
+    transition: border-color 0.15s ease, color 0.15s ease;
+  }
+  .row-actions button:hover { border-color: var(--crash); color: var(--crash); }
+
+  .empty-state {
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    color: var(--silver-faint);
+    padding: 20px 0;
+  }
+
+  /* ---------- Detail panel ---------- */
+  .detail {
+    margin-top: 28px;
+    display: none;
+  }
+  .detail.visible { display: block; }
+
+  .detail-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--line);
+  }
+  .detail-header .url {
+    font-size: 1rem;
+    font-weight: 600;
+  }
+  .detail-header .timestamp {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    color: var(--silver-faint);
+  }
+
+  .test-card {
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--skip);
+    border-radius: 6px;
+    padding: 14px 16px;
+    margin-bottom: 8px;
+    animation: reveal 0.35s ease both;
+  }
+  .test-card.pass { border-left-color: var(--pass); }
+  .test-card.fail { border-left-color: var(--fail); }
+  .test-card.crash { border-left-color: var(--crash); }
+  .test-card.skipped { border-left-color: var(--skip); }
+
+  @keyframes reveal {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .test-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 14px;
+  }
+
+  .test-desc {
+    font-size: 0.9rem;
+    line-height: 1.45;
+    max-width: 68ch; /* keeps long descriptions readable even on very wide screens */
+  }
+
+  .badge {
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 3px 9px;
+    border-radius: 100px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .badge.pass { background: var(--pass-dim); color: var(--pass); }
+  .badge.fail { background: var(--fail-dim); color: var(--fail); }
+  .badge.crash { background: var(--crash-dim); color: var(--crash); }
+  .badge.skipped { background: var(--skip-dim); color: var(--skip); }
+
+  .test-error {
+    margin-top: 10px;
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    color: var(--silver-dim);
+    background: var(--bg-raised);
+    border-radius: 5px;
+    padding: 10px 12px;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  .test-meta-row {
+    margin-top: 8px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .confidence-tag {
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    color: var(--silver-faint);
+  }
+
+  .expand-toggle {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    color: var(--silver-faint);
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+  .expand-toggle:hover { color: var(--silver); }
+
+  .script-block {
+    display: none;
+    margin-top: 12px;
+    background: #000;
+    border: 1px solid var(--line);
+    border-radius: 5px;
+    padding: 12px 14px;
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    color: var(--silver-dim);
+    white-space: pre-wrap;
+    word-break: break-word;
+    max-height: 320px;
+    overflow-y: auto;
+  }
+  .script-block.visible { display: block; }
+
+  .page-map {
+    margin-top: 24px;
+    padding-top: 16px;
+    border-top: 1px solid var(--line);
+  }
+  .page-map summary {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    color: var(--silver-faint);
+    cursor: pointer;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+  .page-map pre {
+    margin-top: 12px;
+    background: var(--bg-raised);
+    border-radius: 6px;
+    padding: 14px;
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    color: var(--silver-faint);
+    max-height: 280px;
+    overflow: auto;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  @media (max-width: 640px) {
+    .shell { padding: 32px 16px 60px; }
+    .crawl-row { grid-template-columns: 1fr; gap: 8px; }
+    .url-group-header { flex-wrap: wrap; }
+    .tally { flex-wrap: wrap; }
+    .stat-strip { flex-wrap: wrap; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation-duration: 0.001ms !important; }
+  }
+</style>
 </head>
 <body>
-  <h1>AutoTest — Crawl & Test Results Dashboard</h1>
+<div class="shell">
 
-  <form id="runForm">
+  <div class="masthead">
+    <h1>AutoTest</h1>
+    <div class="tag">Diagnostic Dashboard</div>
+  </div>
+
+  <form class="run-panel" id="runForm">
     <input type="url" id="urlInput" placeholder="https://example.com" required />
     <button type="submit" id="runButton">Run</button>
   </form>
   <div id="runStatus"></div>
 
-  <table id="crawlsTable">
-    <thead>
-      <tr><th>ID</th><th>URL</th><th>Crawled At</th><th>Tests</th><th>Pass</th><th>Fail</th><th>Crash</th><th>Actions</th></tr>
-    </thead>
-    <tbody></tbody>
-  </table>
-  <div id="detail"></div>
+  <div class="crawls">
+    <div class="section-label-row">
+      <div class="section-label">Crawl History</div>
+      <div class="stat-strip" id="statStrip"></div>
+    </div>
+    <div id="crawlList"></div>
+  </div>
 
-  <script>
-    const runForm = document.getElementById('runForm');
-    const urlInput = document.getElementById('urlInput');
-    const runButton = document.getElementById('runButton');
-    const runStatus = document.getElementById('runStatus');
+  <div class="detail" id="detail"></div>
 
-    async function loadCrawls() {
-      const res = await fetch('/api/crawls');
-      const crawls = await res.json();
-      const tbody = document.querySelector('#crawlsTable tbody');
-      tbody.innerHTML = crawls.map(c => `
-        <tr>
-          <td>${c.id}</td>
-          <td>${c.url}</td>
-          <td>${new Date(c.crawled_at).toLocaleString()}</td>
-          <td>${c.test_count}</td>
-          <td class="pass">${c.passed}</td>
-          <td class="fail">${c.failed}</td>
-          <td class="crash">${c.crashed}</td>
-          <td>
-            <button onclick="viewDetail(${c.id})">View</button>
-            <button onclick="removeCrawl(${c.id})">Delete</button>
-          </td>
-        </tr>
+</div>
+
+<script>
+  const runForm = document.getElementById('runForm');
+  const urlInput = document.getElementById('urlInput');
+  const runButton = document.getElementById('runButton');
+  const runStatus = document.getElementById('runStatus');
+  const crawlList = document.getElementById('crawlList');
+  const statStrip = document.getElementById('statStrip');
+  const detail = document.getElementById('detail');
+
+  let activeCrawlId = null;
+  const expandedGroups = new Set(); // remembers which URL groups are open across refreshes
+
+  function escapeHtml(str) {
+    if (str === null || str === undefined) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+  }
+
+  function tallySpan(count, cls, label) {
+    return `<span class="${cls}${count === 0 ? ' zero' : ''}">${count} ${label}</span>`;
+  }
+
+  async function loadCrawls() {
+    const res = await fetch('/api/crawls');
+    const crawls = await res.json();
+
+    if (!crawls.length) {
+      statStrip.textContent = '';
+      crawlList.innerHTML = '<div class="empty-state">No crawls yet. Enter a URL above and run the pipeline.</div>';
+      return;
+    }
+
+    // Overall stat strip: shape of the data before scrolling
+    const totals = crawls.reduce((acc, c) => {
+      acc.pass += c.passed; acc.fail += c.failed; acc.crash += c.crashed;
+      return acc;
+    }, { pass: 0, fail: 0, crash: 0 });
+    const urlCount = new Set(crawls.map((c) => c.url)).size;
+    statStrip.innerHTML = `
+      <span>${crawls.length} runs</span>
+      <span>${urlCount} ${urlCount === 1 ? 'url' : 'urls'}</span>
+      ${tallySpan(totals.pass, 'n-pass', 'pass')}
+      ${tallySpan(totals.fail, 'n-fail', 'fail')}
+      ${tallySpan(totals.crash, 'n-crash', 'crash')}
+    `;
+
+    // Group consecutive/all runs by URL so repeated URLs aren't repeated at full weight
+    const groups = new Map();
+    for (const c of crawls) {
+      if (!groups.has(c.url)) groups.set(c.url, []);
+      groups.get(c.url).push(c);
+    }
+
+    // Default: most recently active URL group open, rest closed — unless the user already toggled something
+    if (expandedGroups.size === 0 && groups.size > 0) {
+      expandedGroups.add(crawls[0].url);
+    }
+
+    crawlList.innerHTML = Array.from(groups.entries()).map(([url, runs]) => {
+      const isExpanded = expandedGroups.has(url);
+      const groupTotals = runs.reduce((acc, c) => {
+        acc.pass += c.passed; acc.fail += c.failed; acc.crash += c.crashed;
+        return acc;
+      }, { pass: 0, fail: 0, crash: 0 });
+
+      const rowsHtml = runs.map((c) => `
+        <div class="crawl-row ${c.id === activeCrawlId ? 'active' : ''}" data-id="${c.id}">
+          <div class="meta">#${c.id} · ${new Date(c.crawled_at).toLocaleString()} · ${c.test_count} tests</div>
+          <div class="tally">
+            ${tallySpan(c.passed, 'n-pass', 'pass')}
+            ${tallySpan(c.failed, 'n-fail', 'fail')}
+            ${tallySpan(c.crashed, 'n-crash', 'crash')}
+          </div>
+          <div class="row-actions">
+            <button data-action="delete" data-id="${c.id}">Delete</button>
+          </div>
+        </div>
       `).join('');
-    }
 
-    async function viewDetail(id) {
-      const res = await fetch('/api/crawls/' + id);
-      const data = await res.json();
-      document.getElementById('detail').textContent = JSON.stringify(data, null, 2);
-    }
+      return `
+        <div class="url-group ${isExpanded ? 'expanded' : ''}" data-url="${escapeHtml(url)}">
+          <div class="url-group-header" data-action="toggle-group">
+            <div class="url">${escapeHtml(url)}</div>
+            <div class="run-count">${runs.length} ${runs.length === 1 ? 'run' : 'runs'} · ${tallySpan(groupTotals.pass, 'n-pass', 'pass')} ${tallySpan(groupTotals.fail, 'n-fail', 'fail')} ${tallySpan(groupTotals.crash, 'n-crash', 'crash')}</div>
+            <div class="chevron">▸</div>
+          </div>
+          <div class="url-group-runs">${rowsHtml}</div>
+        </div>
+      `;
+    }).join('');
 
-    async function removeCrawl(id) {
-      if (!confirm('Delete crawl ' + id + ' and all its test data?')) return;
-      await fetch('/api/crawls/' + id, { method: 'DELETE' });
-      document.getElementById('detail').textContent = '';
-      loadCrawls();
-    }
-
-    function setStatus(text, kind) {
-      runStatus.className = kind || '';
-      runStatus.innerHTML = kind === 'running' ? `<span class="spinner"></span>${text}` : text;
-    }
-
-    runForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const url = urlInput.value.trim();
-      if (!url) return;
-
-      runButton.disabled = true;
-      // This step is slow by nature: crawl + one LLM call per test case for the test
-      // descriptions + one more LLM call per test case for the Playwright script +
-      // executing each script in a real browser. Set expectations up front.
-      setStatus('Running pipeline — crawling, generating tests, and executing them. This can take a minute or two...', 'running');
-
-      try {
-        const res = await fetch('/api/crawls/run', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ url }),
-        });
-        const data = await res.json();
-
-        if (!res.ok) {
-          throw new Error(data.error || `Request failed with status ${res.status}`);
+    crawlList.querySelectorAll('[data-action="toggle-group"]').forEach((header) => {
+      header.addEventListener('click', () => {
+        const group = header.closest('.url-group');
+        const url = group.dataset.url;
+        if (expandedGroups.has(url)) {
+          expandedGroups.delete(url);
+          group.classList.remove('expanded');
+        } else {
+          expandedGroups.add(url);
+          group.classList.add('expanded');
         }
-
-        setStatus(`Done. Created crawl #${data.crawlId}.`, 'success');
-        await loadCrawls();
-        await viewDetail(data.crawlId);
-        urlInput.value = '';
-      } catch (err) {
-        setStatus(`Run failed: ${err.message}`, 'error');
-      } finally {
-        runButton.disabled = false;
-      }
+      });
     });
 
+    crawlList.querySelectorAll('.crawl-row').forEach((row) => {
+      row.addEventListener('click', (e) => {
+        if (e.target.closest('[data-action="delete"]')) return;
+        viewDetail(Number(row.dataset.id));
+      });
+    });
+
+    crawlList.querySelectorAll('[data-action="delete"]').forEach((btn) => {
+      btn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const id = Number(btn.dataset.id);
+        if (!confirm(`Delete crawl #${id} and all its test data? This can't be undone.`)) return;
+        await fetch('/api/crawls/' + id, { method: 'DELETE' });
+        if (activeCrawlId === id) {
+          activeCrawlId = null;
+          detail.classList.remove('visible');
+          detail.innerHTML = '';
+        }
+        loadCrawls();
+      });
+    });
+  }
+
+  function statusClass(result) {
+    if (result === 'pass') return 'pass';
+    if (result === 'fail') return 'fail';
+    if (result === 'crash') return 'crash';
+    return 'skipped';
+  }
+
+  async function viewDetail(id) {
+    activeCrawlId = id;
+    const res = await fetch('/api/crawls/' + id);
+    const data = await res.json();
+
+    if (!data.crawl) {
+      detail.innerHTML = '<div class="empty-state">Could not load this crawl.</div>';
+      detail.classList.add('visible');
+      return;
+    }
+
+    const testCardsHtml = (data.testCases || []).map((tc, i) => {
+      const status = statusClass(tc.result);
+      const hasScript = !!tc.script;
+      const scriptId = `script-${tc.id}`;
+      return `
+        <div class="test-card ${status}" style="animation-delay:${i * 40}ms">
+          <div class="test-top">
+            <div class="test-desc">${escapeHtml(tc.description)}</div>
+            <div class="badge ${status}">${escapeHtml(tc.result || 'skipped')}</div>
+          </div>
+          <div class="test-meta-row">
+            <span class="confidence-tag">${escapeHtml(tc.confidence || 'unvalidated')}</span>
+            ${hasScript ? `<button class="expand-toggle" data-target="${scriptId}">view script</button>` : ''}
+          </div>
+          ${tc.error ? `<div class="test-error">${escapeHtml(tc.error)}</div>` : ''}
+          ${hasScript ? `<div class="script-block" id="${scriptId}">${escapeHtml(tc.script)}</div>` : ''}
+        </div>
+      `;
+    }).join('');
+
+    let pageMapHtml = '';
+    try {
+      const raw = JSON.parse(data.crawl.raw_json);
+      pageMapHtml = `
+        <details class="page-map">
+          <summary>Crawled Page Map</summary>
+          <pre>${escapeHtml(JSON.stringify(raw, null, 2))}</pre>
+        </details>
+      `;
+    } catch {
+      // raw_json not parseable — skip the page map section rather than break the view
+    }
+
+    detail.innerHTML = `
+      <div class="detail-header">
+        <div class="url">${escapeHtml(data.crawl.url)}</div>
+        <div class="timestamp">#${data.crawl.id} · ${new Date(data.crawl.crawled_at).toLocaleString()}</div>
+      </div>
+      ${testCardsHtml || '<div class="empty-state">No test cases recorded for this crawl.</div>'}
+      ${pageMapHtml}
+    `;
+    detail.classList.add('visible');
+
+    detail.querySelectorAll('.expand-toggle').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const target = document.getElementById(btn.dataset.target);
+        const isVisible = target.classList.toggle('visible');
+        btn.textContent = isVisible ? 'hide script' : 'view script';
+      });
+    });
+
+    // Refresh list to show active highlight, but keep the URL group open so the
+    // clicked row doesn't visually disappear underneath a re-collapsed group
+    const activeCrawl = (await (await fetch('/api/crawls')).json()).find((c) => c.id === id);
+    if (activeCrawl) expandedGroups.add(activeCrawl.url);
     loadCrawls();
-  </script>
+  }
+
+  function setStatus(text, kind) {
+    runStatus.className = kind || '';
+    runStatus.innerHTML = kind === 'running'
+      ? `<span class="dot"></span>${text}`
+      : text;
+  }
+
+  runForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const url = urlInput.value.trim();
+    if (!url) return;
+
+    runButton.disabled = true;
+    setStatus('Running pipeline — crawling, generating tests, executing. This can take a minute or two.', 'running');
+
+    try {
+      const res = await fetch('/api/crawls/run', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url }),
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || `Request failed with status ${res.status}`);
+      }
+
+      setStatus(`Done. Created crawl #${data.crawlId}.`, 'success');
+      await loadCrawls();
+      await viewDetail(data.crawlId);
+      urlInput.value = '';
+    } catch (err) {
+      setStatus(`Run failed: ${err.message}`, 'error');
+    } finally {
+      runButton.disabled = false;
+    }
+  });
+
+  loadCrawls();
+</script>
 </body>
 </html>
