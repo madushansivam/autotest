@@ -12,3 +12,6 @@ console.log('Rows changed:', updateInfo.changes);
 
 console.log('\n--- Verify update ---');
 console.log(getCrawlDetail(1).testCases.find(tc => tc.id === 2));
+
+console.log('\n--- DELETE test: NOT running against id=1 (keep it for the demo) ---');
+console.log('Delete function is defined and ready; will demo against a throwaway test crawl during recording.');

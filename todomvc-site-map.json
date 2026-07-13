@@ -1,0 +1,63 @@
+[
+  {
+    "url": "https://demo.playwright.dev/todomvc",
+    "buttons": [
+      {
+        "text": "[aria-label] Delete",
+        "safe": true
+      }
+    ],
+    "inputs": [
+      {
+        "type": "text",
+        "name": "",
+        "id": "",
+        "placeholder": "What needs to be done?"
+      },
+      {
+        "type": "checkbox",
+        "name": "",
+        "id": "toggle-all",
+        "placeholder": ""
+      },
+      {
+        "type": "checkbox",
+        "name": "",
+        "id": "",
+        "placeholder": ""
+      },
+      {
+        "type": "text",
+        "name": "",
+        "id": "",
+        "placeholder": ""
+      }
+    ],
+    "links": [
+      {
+        "text": "real TodoMVC app.",
+        "href": "https://todomvc.com/"
+      },
+      {
+        "text": "All",
+        "href": "https://demo.playwright.dev/todomvc/#/"
+      },
+      {
+        "text": "Active",
+        "href": "https://demo.playwright.dev/todomvc/#/active"
+      },
+      {
+        "text": "Completed",
+        "href": "https://demo.playwright.dev/todomvc/#/completed"
+      },
+      {
+        "text": "Remo H. Jansen",
+        "href": "http://github.com/remojansen/"
+      },
+      {
+        "text": "TodoMVC",
+        "href": "http://todomvc.com/"
+      }
+    ]
+  }
+]

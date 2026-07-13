@@ -13,10 +13,32 @@
     .crash { color: #8e44ad; font-weight: bold; }
     button { padding: 6px 12px; cursor: pointer; }
     #detail { margin-top: 30px; padding: 15px; background: #f9f9f9; border-radius: 6px; white-space: pre-wrap; font-family: monospace; font-size: 13px; }
+
+    #runForm { display: flex; gap: 8px; margin-top: 16px; align-items: center; }
+    #runForm input[type="url"] { flex: 1; padding: 8px 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; }
+    #runForm button { background: #1a1a2e; color: white; border: none; border-radius: 4px; padding: 8px 16px; font-size: 14px; }
+    #runForm button:disabled { background: #999; cursor: not-allowed; }
+    #runStatus { margin-top: 10px; font-size: 14px; min-height: 20px; }
+    #runStatus.running { color: #555; }
+    #runStatus.error { color: #c0392b; font-weight: bold; }
+    #runStatus.success { color: green; font-weight: bold; }
+    .spinner {
+      display: inline-block; width: 12px; height: 12px; border: 2px solid #ccc;
+      border-top-color: #1a1a2e; border-radius: 50%; animation: spin 0.8s linear infinite;
+      margin-right: 6px; vertical-align: middle;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
   </style>
 </head>
 <body>
   <h1>AutoTest — Crawl & Test Results Dashboard</h1>
+
+  <form id="runForm">
+    <input type="url" id="urlInput" placeholder="https://example.com" required />
+    <button type="submit" id="runButton">Run</button>
+  </form>
+  <div id="runStatus"></div>
+
   <table id="crawlsTable">
     <thead>
       <tr><th>ID</th><th>URL</th><th>Crawled At</th><th>Tests</th><th>Pass</th><th>Fail</th><th>Crash</th><th>Actions</th></tr>
@@ -26,6 +48,11 @@
   <div id="detail"></div>
 
   <script>
+    const runForm = document.getElementById('runForm');
+    const urlInput = document.getElementById('urlInput');
+    const runButton = document.getElementById('runButton');
+    const runStatus = document.getElementById('runStatus');
+
     async function loadCrawls() {
       const res = await fetch('/api/crawls');
       const crawls = await res.json();
@@ -59,6 +86,45 @@
       document.getElementById('detail').textContent = '';
       loadCrawls();
     }
+
+    function setStatus(text, kind) {
+      runStatus.className = kind || '';
+      runStatus.innerHTML = kind === 'running' ? `<span class="spinner"></span>${text}` : text;
+    }
+
+    runForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const url = urlInput.value.trim();
+      if (!url) return;
+
+      runButton.disabled = true;
+      // This step is slow by nature: crawl + one LLM call per test case for the test
+      // descriptions + one more LLM call per test case for the Playwright script +
+      // executing each script in a real browser. Set expectations up front.
+      setStatus('Running pipeline — crawling, generating tests, and executing them. This can take a minute or two...', 'running');
+
+      try {
+        const res = await fetch('/api/crawls/run', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url }),
+        });
+        const data = await res.json();
+
+        if (!res.ok) {
+          throw new Error(data.error || `Request failed with status ${res.status}`);
+        }
+
+        setStatus(`Done. Created crawl #${data.crawlId}.`, 'success');
+        await loadCrawls();
+        await viewDetail(data.crawlId);
+        urlInput.value = '';
+      } catch (err) {
+        setStatus(`Run failed: ${err.message}`, 'error');
+      } finally {
+        runButton.disabled = false;
+      }
+    });
 
     loadCrawls();
   </script>
