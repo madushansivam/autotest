@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>AutoTest Dashboard</title>
+  <style>
+    body { font-family: sans-serif; max-width: 900px; margin: 40px auto; padding: 0 20px; }
+    h1 { color: #1a1a2e; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th, td { text-align: left; padding: 10px; border-bottom: 1px solid #ddd; }
+    th { background: #f4f4f8; }
+    .pass { color: green; font-weight: bold; }
+    .fail { color: #c0392b; font-weight: bold; }
+    .crash { color: #8e44ad; font-weight: bold; }
+    button { padding: 6px 12px; cursor: pointer; }
+    #detail { margin-top: 30px; padding: 15px; background: #f9f9f9; border-radius: 6px; white-space: pre-wrap; font-family: monospace; font-size: 13px; }
+  </style>
+</head>
+<body>
+  <h1>AutoTest — Crawl & Test Results Dashboard</h1>
+  <table id="crawlsTable">
+    <thead>
+      <tr><th>ID</th><th>URL</th><th>Crawled At</th><th>Tests</th><th>Pass</th><th>Fail</th><th>Crash</th><th>Actions</th></tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+  <div id="detail"></div>
+
+  <script>
+    async function loadCrawls() {
+      const res = await fetch('/api/crawls');
+      const crawls = await res.json();
+      const tbody = document.querySelector('#crawlsTable tbody');
+      tbody.innerHTML = crawls.map(c => `
+        <tr>
+          <td>${c.id}</td>
+          <td>${c.url}</td>
+          <td>${new Date(c.crawled_at).toLocaleString()}</td>
+          <td>${c.test_count}</td>
+          <td class="pass">${c.passed}</td>
+          <td class="fail">${c.failed}</td>
+          <td class="crash">${c.crashed}</td>
+          <td>
+            <button onclick="viewDetail(${c.id})">View</button>
+            <button onclick="removeCrawl(${c.id})">Delete</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    async function viewDetail(id) {
+      const res = await fetch('/api/crawls/' + id);
+      const data = await res.json();
+      document.getElementById('detail').textContent = JSON.stringify(data, null, 2);
+    }
+
+    async function removeCrawl(id) {
+      if (!confirm('Delete crawl ' + id + ' and all its test data?')) return;
+      await fetch('/api/crawls/' + id, { method: 'DELETE' });
+      document.getElementById('detail').textContent = '';
+      loadCrawls();
+    }
+
+    loadCrawls();
+  </script>
+</body>
+</html>
