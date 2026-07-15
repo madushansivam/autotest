@@ -18,6 +18,23 @@
   body {
     @apply bg-surface text-slate-100 font-sans antialiased;
     min-height: 100vh;
+    position: relative;
+  }
+
+  /*
+   * Film grain overlay — cheap static SVG noise, no JS/canvas cost.
+   * Sits above content but ignores pointer events so it never blocks
+   * clicks. Kept very subtle (3% opacity) so it reads as texture, not
+   * as visual noise fighting the actual data being displayed.
+   */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: 999;
+    pointer-events: none;
+    opacity: 0.03;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   }
 
   /* Scrollbar styling */
@@ -55,5 +72,30 @@
   /* Subtle section divider */
   .divider {
     @apply border-t border-white/5;
+  }
+
+  /*
+   * Fluid content container — replaces fixed max-w-5xl (1024px) mx-auto.
+   * A hard max-width leaves large dead margins on wide monitors (the same
+   * bug fixed earlier in the vanilla dashboard). This scales smoothly:
+   * fills small screens via the vw-based padding-equivalent width, caps
+   * growth at 1600px on very large displays instead of stopping cold at
+   * 1024px with empty space on either side.
+   */
+  .container-fluid {
+    width: min(1600px, 92vw);
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  /*
+   * Uppercase mono metadata label — the "LATITUDE: 34.0522° N" style
+   * readout treatment. Use for run metadata (timestamps, page counts,
+   * LLM call counts), not for anything that's the primary content of
+   * a card — this is a supporting-detail treatment, not a heading.
+   */
+  .label-mono {
+    @apply font-mono text-xs uppercase tracking-wider text-slate-500;
+    letter-spacing: 0.08em;
   }
 }

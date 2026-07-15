@@ -51,7 +51,7 @@ export default function RunDetail() {
 
       {/* Nav */}
       <nav className="relative border-b border-white/5 bg-surface-1/50 backdrop-blur-md sticky top-0 z-10">
-        <div className="max-w-5xl mx-auto px-4 h-14 flex items-center gap-3">
+        <div className="container-fluid h-14 flex items-center gap-3">
           <Link
             to="/"
             className="text-slate-400 hover:text-white transition-colors text-sm flex items-center gap-1.5"
@@ -67,17 +67,19 @@ export default function RunDetail() {
         </div>
       </nav>
 
-      <main className="relative max-w-5xl mx-auto px-4 py-8 animate-fade-in">
+      <main className="relative container-fluid py-8 animate-fade-in">
         {/* Run header */}
         <div className="glass p-6 mb-6">
           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
             <div className="min-w-0">
-              <h1 className="text-xl font-bold text-white truncate">{app?.label ?? app?.url}</h1>
+              <h1 className="font-display text-xl font-bold text-white truncate tracking-tight">
+                {(app?.label ?? app?.url ?? '').toUpperCase()}
+              </h1>
               {app?.label && <p className="text-sm text-slate-400 truncate mt-0.5">{app.url}</p>}
-              <div className="flex flex-wrap gap-4 mt-3 text-sm text-slate-400">
-                <span>🕐 {formatDuration(run.started_at, run.finished_at)}</span>
-                <span>📄 {run.pages_crawled} pages crawled</span>
-                <span>🤖 {run.llm_calls_used} LLM calls</span>
+              <div className="flex flex-wrap gap-4 mt-3 label-mono">
+                <span>DURATION: {formatDuration(run.started_at, run.finished_at)}</span>
+                <span>PAGES: {run.pages_crawled}</span>
+                <span>LLM CALLS: {run.llm_calls_used}</span>
               </div>
             </div>
 
@@ -92,9 +94,9 @@ export default function RunDetail() {
           {/* Stats bar */}
           {run.stats && run.stats.total > 0 && (
             <div className="mt-5">
-              <div className="flex justify-between text-xs text-slate-400 mb-2">
-                <span>{run.stats.total} tests</span>
-                <span className="text-pass font-medium">{Math.round((run.stats.passed / run.stats.total) * 100)}% pass</span>
+              <div className="flex justify-between label-mono mb-2">
+                <span>{run.stats.total} TESTS</span>
+                <span className="text-pass">{Math.round((run.stats.passed / run.stats.total) * 100)}% PASS</span>
               </div>
               <StatBar
                 passed={run.stats.passed}

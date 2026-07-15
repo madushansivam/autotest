@@ -13,13 +13,18 @@ export default {
           '2': 'hsl(220 16% 16%)',
           '3': 'hsl(220 14% 20%)',
         },
-        // Brand accent — electric violet
+        // Brand accent — dusty muted plum (was electric violet).
+        // Same hue family, desaturated + warmed for a quieter, less
+        // generic-SaaS look. Only used for chrome/decoration (nav,
+        // buttons, headings, focus rings) — never for status meaning.
         brand: {
-          DEFAULT: 'hsl(262 83% 66%)',
-          light: 'hsl(262 90% 78%)',
-          dark: 'hsl(262 70% 50%)',
+          DEFAULT: 'hsl(280 28% 52%)',
+          light: 'hsl(280 30% 68%)',
+          dark: 'hsl(280 25% 38%)',
         },
-        // Status colours
+        // Status colours — deliberately left untouched. These carry
+        // functional meaning (pass/fail/crash/skip) and must stay
+        // clearly distinguishable regardless of the brand palette.
         pass: 'hsl(145 63% 45%)',
         fail: 'hsl(0 72% 55%)',
         crash: 'hsl(30 95% 52%)',
@@ -28,6 +33,19 @@ export default {
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],
         mono: ['JetBrains Mono', 'Menlo', 'monospace'],
+        display: ['Syncopate', 'Inter', 'system-ui', 'sans-serif'],
+      },
+      fontSize: {
+        xs: ['clamp(0.72rem, 0.68rem + 0.2vw, 0.85rem)', { lineHeight: '1.4' }],
+        sm: ['clamp(0.82rem, 0.77rem + 0.25vw, 0.98rem)', { lineHeight: '1.45' }],
+        base: ['clamp(0.95rem, 0.89rem + 0.3vw, 1.125rem)', { lineHeight: '1.55' }],
+        lg: ['clamp(1.05rem, 0.98rem + 0.35vw, 1.3rem)', { lineHeight: '1.5' }],
+        xl: ['clamp(1.15rem, 1.05rem + 0.5vw, 1.5rem)', { lineHeight: '1.45' }],
+        '2xl': ['clamp(1.3rem, 1.15rem + 0.75vw, 1.8rem)', { lineHeight: '1.35' }],
+        '3xl': ['clamp(1.55rem, 1.3rem + 1.2vw, 2.3rem)', { lineHeight: '1.25' }],
+        '4xl': ['clamp(1.9rem, 1.5rem + 2vw, 3rem)', { lineHeight: '1.15' }],
+        '5xl': ['clamp(2.3rem, 1.7rem + 3vw, 4rem)', { lineHeight: '1.1' }],
+        '8xl': ['clamp(4rem, 2.5rem + 7vw, 8rem)', { lineHeight: '1' }],
       },
       animation: {
         'fade-in': 'fadeIn 0.2s ease-out',

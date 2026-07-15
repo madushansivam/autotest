@@ -36,16 +36,19 @@ export async function authMiddleware(
   const token = authHeader.slice(7);
 
   try {
-    const { data, error } = await supabaseAdmin.auth.getUser(token);
+  const { data, error } = await supabaseAdmin.auth.getUser(token);
 
-    if (error || !data.user) {
-      res.status(401).json({ error: 'Invalid or expired token.' });
-      return;
-    }
+  if (error) console.error('Supabase getUser error:', error.message, error.status);
 
-    req.userId = data.user.id;
-    next();
-  } catch {
-    res.status(401).json({ error: 'Token verification failed.' });
+  if (error || !data.user) {
+    res.status(401).json({ error: 'Invalid or expired token.' });
+    return;
+  }
+
+  req.userId = data.user.id;
+  next();
+  } catch (err) {
+  console.error('Auth verification error:', err);
+  res.status(401).json({ error: 'Token verification failed.' });
   }
 }

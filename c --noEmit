@@ -1,0 +1,58 @@
+[1mdiff --git a/frontend/src/pages/Dashboard.tsx b/frontend/src/pages/Dashboard.tsx[m
+[1mindex 8c1884b..57adcca 100644[m
+[1m--- a/frontend/src/pages/Dashboard.tsx[m
+[1m+++ b/frontend/src/pages/Dashboard.tsx[m
+[36m@@ -47,16 +47,16 @@[m [mexport default function Dashboard() {[m
+ [m
+       {/* Navigation */}[m
+       <nav className="relative border-b border-white/5 bg-surface-1/50 backdrop-blur-md sticky top-0 z-10">[m
+[31m-        <div className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">[m
+[32m+[m[32m        <div className="container-fluid h-14 flex items-center justify-between">[m
+           <div className="flex items-center gap-2">[m
+             <div className="w-7 h-7 rounded-lg bg-brand/20 border border-brand/30 flex items-center justify-center">[m
+               <svg className="w-4 h-4 text-brand-light" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>[m
+                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />[m
+               </svg>[m
+             </div>[m
+[31m-            <span className="font-bold text-white tracking-tight">AutoTest</span>[m
+[32m+[m[32m            <span className="font-display font-bold text-white tracking-tight">AUTOTEST</span>[m
+             {activeRuns > 0 && ([m
+[31m-              <span className="ml-2 flex items-center gap-1 text-xs text-brand-light bg-brand/10 border border-brand/20 px-2 py-0.5 rounded-full animate-pulse-brand">[m
+[32m+[m[32m              <span className="ml-2 flex items-center gap-1 label-mono text-brand-light bg-brand/10 border border-brand/20 px-2 py-0.5 rounded-full animate-pulse-brand">[m
+                 <Spinner size="sm" />[m
+                 {activeRuns} running[m
+               </span>[m
+[36m@@ -72,11 +72,11 @@[m [mexport default function Dashboard() {[m
+         </div>[m
+       </nav>[m
+ [m
+[31m-      <main className="relative max-w-5xl mx-auto px-4 py-10">[m
+[32m+[m[32m      <main className="relative container-fluid py-10">[m
+         {/* Header */}[m
+         <div className="mb-10">[m
+[31m-          <h1 className="text-4xl font-bold text-white mb-2">[m
+[31m-            Test a <span className="gradient-text">website</span>[m
+[32m+[m[32m          <h1 className="font-display text-4xl font-bold text-white mb-2 tracking-tight">[m
+[32m+[m[32m            TEST A <span className="gradient-text">WEBSITE</span>[m
+           </h1>[m
+           <p className="text-slate-400 max-w-xl">[m
+             Submit any public URL. AutoTest crawls the site, generates test cases[m
+[36m@@ -96,9 +96,9 @@[m [mexport default function Dashboard() {[m
+         {/* Run history */}[m
+         <div>[m
+           <div className="flex items-center justify-between mb-4">[m
+[31m-            <h2 className="text-lg font-semibold text-white">Run history</h2>[m
+[32m+[m[32m            <h2 className="font-display text-lg font-semibold text-white tracking-wide">RUN HISTORY</h2>[m
+             {runs && runs.length > 0 && ([m
+[31m-              <span className="text-sm text-slate-500">{runs.length} run{runs.length !== 1 ? 's' : ''}</span>[m
+[32m+[m[32m              <span className="label-mono">{runs.length} run{runs.length !== 1 ? 's' : ''}</span>[m
+             )}[m
+           </div>[m
+ [m
+[36m@@ -113,4 +113,4 @@[m [mexport default function Dashboard() {[m
+       </main>[m
+     </div>[m
+   );[m
+[31m-}[m
+[32m+[m[32m}[m
+\ No newline at end of file[m

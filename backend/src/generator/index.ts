@@ -72,16 +72,13 @@ export async function generateTestCases(
 
   const { value: rawCases, attempts } = await retryUntilValidJson(
     async (_attempt) => {
-      const response = await client.textGeneration({
+      const response = await client.chatCompletion({
         model: MODEL_ID,
-        inputs: prompt,
-        parameters: {
-          max_new_tokens: MAX_TEST_CASE_TOKENS,
-          temperature: 0.3,
-          return_full_text: false,
-        },
+        messages: [{ role: 'user', content: prompt }],
+        max_tokens: MAX_TEST_CASE_TOKENS,
+        temperature: 0.3,
       });
-      return response.generated_text;
+      return response.choices[0]?.message?.content ?? '';
     },
     isTestCaseArray,
     MAX_RETRIES
@@ -117,28 +114,24 @@ export async function generateScript(
   try {
     const { value: script, attempts } = await retryUntilValid(
       async (_attempt) => {
-        const response = await client.textGeneration({
+        const response = await client.chatCompletion({
           model: MODEL_ID,
-          inputs: prompt,
-          parameters: {
-            max_new_tokens: MAX_SCRIPT_TOKENS,
-            temperature: 0.2,
-            return_full_text: false,
-          },
+          messages: [{ role: 'user', content: prompt }],
+          max_tokens: MAX_SCRIPT_TOKENS,
+          temperature: 0.2,
         });
-        return stripCodeFences(response.generated_text);
+        return stripCodeFences(response.choices[0]?.message?.content ?? '');
       },
       isValidScript,
       MAX_RETRIES
     );
-
     return {
       testCaseIndex: 0,
       script,
       generationFailed: false,
       llmCallsUsed: attempts,
     };
-  } catch (e) {
+} catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     return {
       testCaseIndex: 0,
