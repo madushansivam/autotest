@@ -6,11 +6,16 @@ import { supabase } from '../lib/supabase';
 export default function Login() {
   const navigate = useNavigate();
 
-  useEffect(() => {
-    // If already authenticated, go straight to dashboard
+ useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       if (data.session) navigate('/', { replace: true });
     });
+
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session) navigate('/', { replace: true });
+    });
+
+    return () => listener.subscription.unsubscribe();
   }, [navigate]);
 
   return (
