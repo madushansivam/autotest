@@ -1,203 +1,250 @@
-# AutoTest
+# AutoTest — Autonomous Web Application Testing Agent
 
-> Autonomous web application testing agent — final-year university project.
+AutoTest accepts a URL, crawls the target site with Playwright, generates test cases
+using **Llama-3.1-8B-Instruct** (via HuggingFace Inference API), converts them into
+executable Playwright scripts, runs them headlessly, and shows the results in a
+dashboard — without the user writing a single line of test code.
 
-AutoTest accepts a single URL and, without the user writing any code, autonomously crawls the target site, generates test cases using **Llama-3.1-8B-Instruct**, converts them to executable Playwright scripts, runs them headlessly, and displays results in a React dashboard.
-
----
-
-## Architecture
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│  Browser (React + TypeScript + Tailwind)                        │
-│  Supabase Auth → Dashboard → Run Detail                        │
-└────────────────────────┬────────────────────────────────────────┘
-                         │ REST (Bearer JWT)
-┌────────────────────────▼────────────────────────────────────────┐
-│  Express API  (backend/src/index.ts)                            │
-│  ├── POST /api/applications   (SSRF-validated URL storage)     │
-│  └── POST /api/runs           (triggers pipeline async)        │
-└────────────────────────┬────────────────────────────────────────┘
-                         │
-┌────────────────────────▼────────────────────────────────────────┐
-│  pipeline/index.ts  — ONE canonical flow, no duplicates        │
-│  ┌──────────┐  ┌───────────────┐  ┌──────────────────────────┐ │
-│  │ crawler/ │→ │  generator/   │→ │      executor/           │ │
-│  │Playwright│  │Llama-3.1-8B   │  │Playwright + oracle.ts    │ │
-│  │  BFS     │  │via HF Infer.  │  │HTTP/console/diff signals │ │
-│  └──────────┘  └───────────────┘  └──────────────────────────┘ │
-└────────────────────────┬────────────────────────────────────────┘
-                         │
-┌────────────────────────▼────────────────────────────────────────┐
-│  Supabase (Postgres + Storage + Auth)                           │
-│  applications / runs / test_cases / test_results               │
-│  Row-Level Security: users can only access their own data      │
-└─────────────────────────────────────────────────────────────────┘
-```
+Built as a final-year university project. The pipeline runs today.
 
 ---
 
-## Quick Start (local dev)
+## Quick Start
 
 ### Prerequisites
 
 - Node.js ≥ 18
-- A [Supabase](https://supabase.com) project (free tier is fine)
-- A [HuggingFace](https://huggingface.co/settings/tokens) API key (free)
-- Playwright Chromium: `npx playwright install chromium`
-
-### 1. Clone and install
+- A HuggingFace account (free) — get an API token at [huggingface.co/settings/tokens](https://huggingface.co/settings/tokens)
+- Playwright's Chromium browser:
 
 ```bash
-git clone <repo-url>
-cd AutoTest
-npm install          # installs all workspaces (backend, frontend, eval)
+npx playwright install chromium
 ```
 
-### 2. Configure environment
+### Install and run
 
 ```bash
+git clone https://github.com/madushansivam/autotest.git
+cd autotest
+npm install
+
 cp .env.example .env
-# Edit .env and fill in:
-#   SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY
-#   HUGGINGFACE_API_KEY
-#   VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY, VITE_API_BASE_URL
+# Open .env and set:  HUGGINGFACE_API_KEY=hf_your_token_here
+
+node server.js
 ```
 
-### 3. Apply Supabase migrations
+Open **http://localhost:3000** — paste any public URL, click Run.
 
-```bash
-# Option A: Supabase CLI (recommended)
-npx supabase db push
+### What you'll see
 
-# Option B: paste migration files manually in the Supabase SQL editor
-# supabase/migrations/20240001_initial_schema.sql
-# supabase/migrations/20240002_rls_policies.sql
+The dashboard shows each generated test case, its result (pass / fail / crash /
+skipped), the failure category if it failed, and the generated Playwright script
+that was executed.
+
+---
+
+## How it works
+
+```
+POST /api/crawl  →  run-pipeline.js
+                      │
+                      ├─ Playwright BFS crawl
+                      │    Extracts buttons, inputs, links, headings.
+                      │    Safe-mode filter skips anything matching the
+                      │    blocklist in safe-mode.config.json (payment
+                      │    buttons, account-deletion flows, etc.)
+                      │
+                      ├─ Llama-3.1-8B-Instruct  (test-case generation)
+                      │    Prompt: here is the DOM map — generate 3-5
+                      │    test cases a human QA engineer would perform.
+                      │    Confidence tagged: structural vs behavioural.
+                      │
+                      ├─ Llama-3.1-8B-Instruct  (script generation)
+                      │    Converts each description into a runnable
+                      │    Playwright script body using the exact
+                      │    selectors from the crawled DOM.
+                      │
+                      └─ Playwright executor
+                           Runs each script in a real browser.
+                           Verdict: pass / fail / crash / skipped.
+                           Results written to SQLite (autotest.db).
 ```
 
-Create the screenshots storage bucket:
-```bash
-npx supabase storage buckets create screenshots --public
+Results are stored in a local SQLite database (`autotest.db`, git-ignored)
+and displayed immediately in the dashboard.
+
+---
+
+## Project structure — working system
+
+```
+autotest/
+├── server.js                      Express API + static file server
+├── run-pipeline.js                Single-function pipeline (crawl → generate → execute)
+├── db.js                          SQLite schema setup (better-sqlite3)
+├── db-operations.js               CRUD helpers: list, detail, delete crawls
+├── safe-mode.config.json          Blocklist: buttons/fields/routes never tested
+├── public/index.html              Vanilla JS dashboard (no build step)
+│
+├── crawler.js                     Standalone dev script: single-page crawl
+├── multi-crawler.js               Standalone dev script: BFS multi-page crawl
+├── generate-tests.js              Standalone dev script: LLM test-case generation
+├── generate-playwright-scripts.js Standalone dev script: LLM script generation
+├── run-tests.js                   Standalone dev script: execute a script batch
+├── import-to-db.js                Utility: import a completed run from JSON files
+└── test-hf-api.js                 Utility: smoke-test your HuggingFace API key
 ```
 
-### 4. Run
+The standalone scripts in the root were the development stepping stones — each one
+was used independently to build and verify a stage of the pipeline before everything
+was integrated into `run-pipeline.js`.
+
+---
+
+## The honest project story
+
+### What was actually built and debugged
+
+This project was built incrementally over a focused working session, with every
+decision committed and explained in the git log. A few moments worth reading:
+
+**Finding and fixing the "vacuous pass" bug.**
+Early in the execution engine, a generated test for a TodoMVC `<tbody>` row was
+returning `{ passed: true }` even though the selector it was using (`tbody > tr`)
+matched nothing — Playwright's auto-waiting silently succeeded on an empty result.
+The fix was tightening the script-generation prompt to force the model to use only
+selectors it had actually seen in the crawled DOM data, and to wrap core actions in
+try/catch so a no-op returns `{ passed: false }` rather than vacuously succeeding.
+
+**Discovering the safe-mode gap mid-test.**
+During a live crawl of `books.toscrape.com`, the crawler was following "Add to
+basket" links — phrases that are obvious dangerous actions but weren't in the
+initial blocklist. Found via a real run, not a code review. Added
+`add to basket / add to cart / add to bag` to `safe-mode.config.json` and
+verified the next crawl skipped them.
+
+**The malformed JSON retry problem.**
+Llama-3.1-8B-Instruct occasionally emits malformed JSON (unclosed strings,
+trailing commas) despite being explicitly instructed not to. Discovered this when
+a test-generation run silently produced zero test cases. The fix was a retry loop
+(up to 3 attempts) with stricter prompt wording, and a `validationWarning` flag
+on any test case where the model returned an unexpected `confidence` value outside
+`["structural", "behavioral"]`. The retry logic later became its own reusable module
+in the architectural exploration (`backend/src/lib/retry.ts`).
+
+**The provider pivot.**
+Development started with the Anthropic Claude API as the LLM. After hitting the
+free-tier budget limit mid-session, the project pivoted to HuggingFace's free
+Inference API with Llama-3.1-8B-Instruct. This required rewriting the prompt
+structure because Llama's instruction-following is less reliable than Claude's —
+which is ultimately what drove the retry logic and stricter JSON-only prompts.
+
+### What this can and cannot test
+
+LLM-generated tests without a ground-truth oracle can only reliably catch
+**structural breakage**: missing elements, navigation crashes, uncaught JS errors,
+HTTP 4xx/5xx responses. "Behavioural" tests (e.g. "submit the login form and check
+the user is redirected") can detect surface-level failures but cannot verify
+server-side correctness — whether data was actually persisted, whether an email was
+sent, whether a calculation produced the right number. This is a known, accepted
+limitation of the approach, documented in the code comments.
+
+---
+
+## Architectural Exploration (Not Deployed)
+
+The `backend/`, `frontend/`, `eval/`, and `supabase/` folders contain a TypeScript
+rebuild of the same concept, designed after the working prototype was complete.
+
+**What it was meant to add:**
+- **SSRF hardening** (`backend/src/lib/ssrf-guard.ts`) — DNS-resolving URL validator
+  checking all resolved IPs against private/reserved CIDR ranges, applied twice per
+  request (at entry and again before each browser navigation) to close the
+  DNS-rebinding window
+- **Auth + data isolation** — Supabase JWT verification on every API route; Postgres
+  Row-Level Security policies ensuring users can only access their own data
+- **Oracle signals** (`backend/src/executor/oracle.ts`) — HTTP status capture,
+  console error capture, and perceptual screenshot diffing (dHash algorithm) stored
+  alongside each test result, independent of the LLM verdict
+- **Automated evaluation harness** (`eval/`) — recall and behavioural precision
+  metrics computed by running the pipeline against 4 fixed fixture sites and
+  comparing output against human-authored ground-truth test cases
+- **React dashboard** (`frontend/`) — typed API client, live run-status polling,
+  oracle signal display per test result
+
+**What it actually is:**
+The backend compiles cleanly and its 57 unit tests pass (`npm test`). The frontend
+compiles cleanly. But the backend crashes on startup without a configured Supabase
+project, the database migrations have never been applied to a live instance, the
+screenshot storage bucket was never created, and the eval harness has never been run
+against real fixture sites. The RLS policies and the screenshot diffing in particular
+are untested against real infrastructure.
+
+**Read it as a design document, not working code.** The architecture is sound and
+the code is correct at a static level — but it has never been run end-to-end.
+
+---
+
+## Security notes — working system
+
+- **URL validation**: `server.js` rejects non-http(s) schemes, `localhost`, and the
+  most common private/reserved IP ranges (127.x, 10.x, 192.168.x, 172.16–31.x,
+  169.254.x). It does **not** DNS-resolve hostnames — a public hostname that resolves
+  to a private IP would pass. The full SSRF guard with DNS resolution lives in
+  `backend/src/lib/ssrf-guard.ts`.
+- **Safe mode**: `safe-mode.config.json` blocklists buttons, input fields, and form
+  routes associated with destructive or financial actions. This is a best-effort
+  heuristic, not a guarantee. Run against staging environments, not production sites.
+- **No auth**: the working system (`server.js`) has no authentication — it is
+  designed as a local developer tool, not a multi-user hosted service.
+
+---
+
+## Running the standalone dev scripts
+
+These scripts were used during development to test individual pipeline stages:
 
 ```bash
-# Terminal 1 — backend API (port 3001)
-npm run dev:backend
+# Smoke-test your API key
+node test-hf-api.js
 
-# Terminal 2 — frontend dashboard (port 5173)
-npm run dev:frontend
+# Crawl a single page (hardcoded to TodoMVC — edit TARGET_URL to change)
+node crawler.js
+
+# BFS crawl up to 8 pages (hardcoded to books.toscrape.com — edit START_URL)
+node multi-crawler.js
+
+# Generate test cases from a crawl output
+node generate-tests.js
+
+# Generate Playwright scripts from test cases
+node generate-playwright-scripts.js
+
+# Execute a batch of generated scripts
+node run-tests.js
 ```
 
-Open http://localhost:5173, sign up, and submit a URL.
+Note: `crawler.js` and `run-tests.js` have hardcoded URLs. They are dev tools, not
+general-purpose utilities. `run-pipeline.js` is the integrated version that handles
+any URL.
 
-### 5. CLI (no frontend needed)
+---
 
-```bash
-cd backend
-npx ts-node src/cli.ts https://todomvc.com/examples/react/dist/
-# or without Supabase persistence:
-npx ts-node src/cli.ts https://example.com --no-persist
-```
+## Running Codebase B's unit tests
 
-### 6. Run unit tests
+The architectural exploration includes 57 unit tests that pass independently of
+Supabase:
 
 ```bash
-npm test   # runs backend Jest suite (ssrf-guard, retry, safety-filter)
+npm test
+# ssrf-guard: 30 tests
+# retry logic: 14 tests
+# safety filter: 13 tests
 ```
 
 ---
 
-## What Safe Mode Does and Doesn't Guarantee
+## License
 
-AutoTest implements a **two-layer safety filter** to reduce the risk of accidental side effects when running against public websites:
-
-**Layer 1 — Text blocklist** (`executor/safety-filter.ts`)
-Blocks any test case whose description contains phrases like "delete account", "checkout", "pay now", etc. This list is sourced from `safe-mode.config.json` in the legacy prototype.
-
-**Layer 2 — Form mutation heuristic**
-Before executing any generated script, inspects the script source for form `action` URLs matching patterns like `/payment`, `/delete-account`, `/send-email`. Scripts targeting these routes are skipped with a `safety-filter-layer-2` failure category.
-
-**What this does NOT guarantee:**
-- Layer 1 is bypassed by any phrasing the blocklist doesn't anticipate.
-- Layer 2 is a regex heuristic — it cannot catch all mutation paths.
-- Neither layer prevents all state changes on every possible website.
-
-**True isolation requires running AutoTest against a staging or sandboxed environment, not a production site.** The README and code comments are explicit about this.
-
----
-
-## Known Limitation: The Oracle Problem
-
-> **LLM-generated tests without a ground-truth oracle can only reliably catch structural breakage and crashes — not business-logic correctness.**
-
-This is a known, accepted limitation of the approach, not a bug.
-
-**What AutoTest CAN reliably detect:**
-- Missing elements (buttons, inputs, headings disappeared)
-- Navigation crashes (page throws an uncaught exception)
-- HTTP 4xx/5xx responses during a test
-- Console JS errors independent of test assertions
-- Visual regressions via perceptual hash screenshot diffing
-
-**What AutoTest CANNOT reliably verify:**
-- Whether a form submission actually persisted data to the database
-- Whether a calculation produced the correct numeric result
-- Whether an email was actually sent
-- Any business rule that requires inspecting server state
-
-Behavioral-tagged tests assert *visible* outcomes (URL changed, element appeared) which can be observed in the browser DOM. They still cannot verify *server-side correctness*.
-
----
-
-## Evaluation Harness
-
-```bash
-cd eval
-npx ts-node run-eval.ts
-# Report written to eval/reports/eval-<timestamp>.md and .json
-```
-
-The harness runs the full pipeline against 4 fixture sites (TodoMVC, The Internet, Quotes to Scrape, DemoQA) and computes:
-
-- **Recall** — of human-authored ground-truth cases, how many did AutoTest generate an equivalent test for
-- **Behavioral precision** — of behavioral-tagged AI tests, how many passed
-- **False-positive candidates** — AI tests that reported fail/crash, listed for manual verification
-
-Borderline similarity matches are logged for human review, not auto-classified.
-
----
-
-## Project Structure
-
-```
-AutoTest/
-├── backend/          # Node.js + Express + TypeScript
-│   └── src/
-│       ├── lib/      # ssrf-guard, retry, rate-limiter, supabase-server
-│       ├── crawler/  # Playwright BFS crawler
-│       ├── generator/# Llama-3.1-8B test-case + script generation
-│       ├── executor/ # Playwright executor + oracle signals
-│       ├── pipeline/ # Single canonical crawl→generate→execute flow
-│       └── api/      # Express routes + middleware
-├── frontend/         # React + TypeScript + Tailwind (Vite)
-│   └── src/
-│       ├── pages/    # Login, Dashboard, RunDetail
-│       ├── components/
-│       └── hooks/
-├── eval/             # Evaluation harness (not part of the live product)
-│   └── fixtures/     # Human-authored ground-truth test cases
-└── supabase/
-    └── migrations/   # Applied via Supabase CLI
-```
-
----
-
-## Security Notes
-
-- **SSRF protection**: all user-submitted URLs are validated by `lib/ssrf-guard.ts` which DNS-resolves the hostname and checks it against all private/loopback/link-local CIDR ranges. The check runs twice: at request-validation time and immediately before each `page.goto()` call (anti-DNS-rebinding).
-- **Auth**: all API routes are gated by Supabase JWT verification. Row-Level Security is enforced at the Postgres level.
-- **Rate limiting**: per-user sliding-window limit on `POST /api/runs` (default: 5 runs/hour).
-- **Budget caps**: hard limit on pages crawled per run (default: 8) and LLM calls per run (default: 20).
+MIT

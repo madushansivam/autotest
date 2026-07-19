@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import { InferenceClient } from '@huggingface/inference';
 
-const client = new InferenceClient(process.env.API_KEY);
+const client = new InferenceClient(process.env.HUGGINGFACE_API_KEY);
 
 const response = await client.chatCompletion({
   model: 'meta-llama/Llama-3.1-8B-Instruct',

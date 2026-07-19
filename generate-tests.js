@@ -2,7 +2,7 @@ import 'dotenv/config';
 import fs from 'fs';
 import { InferenceClient } from '@huggingface/inference';
 
-const client = new InferenceClient(process.env.API_KEY);
+const client = new InferenceClient(process.env.HUGGINGFACE_API_KEY);
 const siteMap = JSON.parse(fs.readFileSync('./todomvc-site-map.json', 'utf-8'));
 const targetPage = siteMap[0];
 

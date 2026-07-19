@@ -2,11 +2,16 @@
   "name": "autotest",
   "version": "1.0.0",
   "private": true,
+  "type": "module",
   "workspaces": ["backend", "frontend", "eval"],
   "scripts": {
     "dev:backend": "npm run dev --workspace=backend",
     "dev:frontend": "npm run dev --workspace=frontend",
     "test": "npm run test --workspace=backend",
     "eval:run": "npm run eval --workspace=eval"
+  },
+  "dependencies": {
+    "better-sqlite3": "^9.4.3",
+    "dotenv": "^16.5.0"
   }
 }

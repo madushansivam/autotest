@@ -5,7 +5,7 @@ import fs from 'fs';
 import { InferenceClient } from '@huggingface/inference';
 import db from './db.js';
 
-const client = new InferenceClient(process.env.API_KEY);
+const client = new InferenceClient(process.env.HUGGINGFACE_API_KEY);
 const safeModeConfig = JSON.parse(fs.readFileSync('./safe-mode.config.json', 'utf-8'));
 
 function isBlocked(text) {
