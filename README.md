@@ -7,6 +7,11 @@ dashboard — without the user writing a single line of test code.
 
 Built as a final-year university project. The pipeline runs today.
 
+## 📄 Final Year Project Report
+
+Full written report covering the project's design, methodology, and evaluation:
+**[Download the report (DOCX)](AutoTest_Final_Report.docx)**
+
 ---
 
 ## Quick Start
